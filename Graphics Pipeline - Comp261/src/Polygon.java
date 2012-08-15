@@ -20,6 +20,7 @@ public class Polygon {
   // state: computed during rendering.
   private boolean hidden = false;
   private Color shade;
+  private int shade_int;
   private Rectangle bounds = null;
 
   /** 	 */
@@ -77,10 +78,14 @@ public class Polygon {
     // reflectivity.getRed()+","+reflectivity.getGreen()+","+reflectivity.getBlue()+
     // " -> shade:" + red+","+green+","+blue);
     shade = new Color(red, green, blue);
+    shade_int = red<<16 | green<<8 | blue;
   }
 
-  public Color getShade() {
+  public Color getShade() { // TODO: remove me
     return shade;
+  }
+  public int getShade_int() {
+    return shade_int;
   }
 
   public void reset() {
@@ -93,11 +98,12 @@ public class Polygon {
    * plane.
    */
   public Rectangle bounds() {
+    // TODO: caching the previous result would make it FASTER/less encapsulated
     if (bounds == null) {
-      int minX = Math.round(Math.min(Math.min(vertices[0].x, vertices[1].x), vertices[2].x));
-      int minY = Math.round(Math.min(Math.min(vertices[0].y, vertices[1].y), vertices[2].y));
-      int maxX = Math.round(Math.max(Math.max(vertices[0].x, vertices[1].x), vertices[2].x));
-      int maxY = Math.round(Math.max(Math.max(vertices[0].y, vertices[1].y), vertices[2].y));
+      int minX = (int) Math.floor(Math.min(Math.min(vertices[0].x, vertices[1].x), vertices[2].x));
+      int minY = (int) Math.floor(Math.min(Math.min(vertices[0].y, vertices[1].y), vertices[2].y));
+      int maxX = (int) Math.ceil(Math.max(Math.max(vertices[0].x, vertices[1].x), vertices[2].x));
+      int maxY = (int) Math.ceil(Math.max(Math.max(vertices[0].y, vertices[1].y), vertices[2].y));
       bounds = new Rectangle(minX, minY, (maxX - minX), (maxY - minY));
     }
     return bounds;
@@ -117,7 +123,7 @@ public class Polygon {
     // System.out.println("bounds: " +
     // bounds.x+","+bounds.y+","+bounds.width+","+bounds.height);
     EdgeList[] ans = new EdgeList[bounds.height + 1];
-    for (int edge = 0; edge < 3; edge++) {
+    for (int edge = 0; edge < 3; edge++) { // for all 3 edges
       Vector3D v1 = vertices[edge];
       Vector3D v2 = vertices[(edge + 1) % 3];
       if (v1.y > v2.y) {
@@ -129,8 +135,8 @@ public class Polygon {
       float mx = (v2.x - v1.x) / (v2.y - v1.y);
       float mz = (v2.z - v1.z) / (v2.y - v1.y);
 
-      int scanLine = Math.round(v1.y - bounds.y);
-      double maxScanLine = (v2.y - bounds.y);
+      int scanLine = (int) Math.ceil(v1.y - bounds.y);
+      double maxScanLine = Math.ceil(v2.y - bounds.y);
 
       // System.out.println("edgelist from: ("+v1.x+","+v1.y+","+v1.z+")-("+v2.x+","+v2.y+","+v2.z+") @ scanline "+scanLine+
       // " of "+ans.length + " starting at bounds.y =" + bounds.y + "mx="+mx);
@@ -141,14 +147,17 @@ public class Polygon {
         else
           ans[scanLine].add(x, z);
       }
-      // for (int i=0; i<ans.length; i++){EdgeList e = ans[i];
-      // System.out.println(" ["+ i+"]: "+((e!=null)?e.leftX:"*")+
-      // " - "+((e!=null)?e.rightX:"*"));}
+      /*
+       for (int i=0; i<ans.length; i++){EdgeList e = ans[i];
+       System.out.println(" ["+ i+"]: "+((e!=null)?e.l_x:"*")+
+       " - "+((e!=null)?e.r_x:"*"));}
+       */
     }
     return ans;
   }
 
   public EdgeList[] computeEdgeLists2() {
+    // TODO: http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
     bounds();
     // System.out.println("bounds: " +
     // bounds.x+","+bounds.y+","+bounds.width+","+bounds.height);

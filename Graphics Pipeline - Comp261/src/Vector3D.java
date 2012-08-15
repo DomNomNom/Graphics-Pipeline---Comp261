@@ -1,3 +1,5 @@
+import java.util.Scanner;
+
 /* Code for COMP261 Assignment
  * Name:
  */
@@ -20,6 +22,14 @@ public class Vector3D {
     this.x = x;
     this.y = y;
     this.z = z;
+    this.mag = (float) Math.sqrt(x * x + y * y + z * z);
+  }
+  
+  public Vector3D(String line) {
+    Scanner s = new Scanner(line);
+    this.x = s.nextFloat();
+    this.y = s.nextFloat();
+    this.z = s.nextFloat();
     this.mag = (float) Math.sqrt(x * x + y * y + z * z);
   }
 

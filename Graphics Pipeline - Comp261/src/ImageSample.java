@@ -44,12 +44,12 @@ public class ImageSample {
       // draw it.
       drawing.repaint();
 
-      start -= 5;
+      start -= 5;/*
       try {
         Thread.sleep(1);
       }
       catch (InterruptedException e) {
-      }
+      }*/
     }
     saveImage("TestImage.png");
 

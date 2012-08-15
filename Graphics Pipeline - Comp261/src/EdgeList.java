@@ -1,5 +1,5 @@
 
-public class EdgeList {
+public class EdgeList /*implements Iterable<Float>*/ {
   
   // x/z pairs for left and right edges
   float l_x, l_z;
@@ -13,9 +13,9 @@ public class EdgeList {
 
   public void add(float x, float z) {
     // copy into the appropriate left/right
-    if (x > l_x) { r_x=x; r_z=z; }
-    else         { l_x=x; l_z=z; }
+    if     (x < l_x) { l_x=x; l_z=z; }
+    else if(x > r_x) { r_x=x; r_z=z; }
   }
   
-  // TODO: some kind of getter?
+  // TODO: some kind of getter? or iterator?
 }

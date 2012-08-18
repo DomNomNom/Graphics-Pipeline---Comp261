@@ -21,6 +21,7 @@ public class ZBuffer {
   void releaseLine(int y) {/*TODO*/}
   
   void add(int colour, int x, int y, float z) {
+    if (x>wd || y>ht) return; // don't accept invalid coordinates
     int i = x + y*ht; // our current index  TODO: optimize?
     if (z < depths[i]) {
       depths[i] = z;

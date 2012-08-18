@@ -156,41 +156,44 @@ public class Polygon {
     return ans;
   }
 
-  public EdgeList[] computeEdgeLists2() {
-    // TODO: http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+  public EdgeList[] computeEdgeLists_bresehams() {
+
     bounds();
-    // System.out.println("bounds: " +
-    // bounds.x+","+bounds.y+","+bounds.width+","+bounds.height);
     EdgeList[] ans = new EdgeList[bounds.height + 1];
-    for (int edge = 0; edge < 3; edge++) {
-      Vector3D v1 = vertices[edge];
-      Vector3D v2 = vertices[(edge + 1) % 3];
-      if (v1.y > v2.y) {
-        v1 = v2;
-        v2 = vertices[edge];
-      }
-      float x = v1.x;
-      float z = v1.z;
-      float mx = (v2.x - v1.x) / (v2.y - v1.y);
-      float mz = (v2.z - v1.z) / (v2.y - v1.y);
-
-      int scanLine = Math.round(v1.y - bounds.y);
-      int maxScanLine = Math.round(v2.y - bounds.y);
-
-      // System.out.println("edgelist from: ("+v1.x+","+v1.y+","+v1.z+")-("+v2.x+","+v2.y+","+v2.z+") @ scanline "+scanLine+
-      // " of "+ans.length + " starting at bounds.y =" + bounds.y + "mx="+mx);
-      for (; scanLine <= maxScanLine; scanLine++, x += mx, z += mz) {
-        // System.out.println(" x=" + x + " z=" + z + "@scanLine=" + scanLine);
-        if (ans[scanLine] == null)
-          ans[scanLine] = new EdgeList(x, z);
-        else
-          ans[scanLine].add(x, z);
-      }
-      // for (int i=0; i<ans.length; i++){EdgeList e = ans[i];
-      // System.out.println(" ["+ i+"]: "+((e!=null)?e.leftX:"*")+
-      // " - "+((e!=null)?e.rightX:"*"));}
-    }
+    for (int edge = 0; edge < 3; edge++) // for all 3 edges put the points into a edgeList
+      drawEdgeLine(ans, vertices[edge], vertices[(edge+1)%3] );
     return ans;
+  }
+  
+  /** 
+   * uses Bresenham's line algorithm for nicer edges. 
+   * see: http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm 
+   */
+  public void drawEdgeLine(EdgeList[] canvas, Vector3D A, Vector3D B){
+    
+    /*
+     TODO: http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
+     function line(x0, y0, x1, y1)
+       dx := abs(x1-x0)
+       dy := abs(y1-y0) 
+       if x0 < x1 then sx := 1 else sx := -1
+       if y0 < y1 then sy := 1 else sy := -1
+       err := dx-dy
+     
+       loop
+         setPixel(x0,y0)
+         if x0 = x1 and y0 = y1 exit loop
+         e2 := 2*err
+         if e2 > -dy then 
+           err := err - dy
+           x0 := x0 + sx
+         end if
+         if e2 <  dx then 
+           err := err + dx
+           y0 := y0 + sy 
+         end if
+       end loop
+   */
   }
 
   public String toString() {

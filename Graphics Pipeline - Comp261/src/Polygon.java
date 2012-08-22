@@ -13,9 +13,9 @@ import java.awt.Rectangle;
  */
 public class Polygon {
 
-  private Vector3D[] vertices = new Vector3D[3];
+  private PVector[] vertices = new PVector[3];
   private Color reflectivity;
-  private Vector3D normal;
+  private PVector normal;
 
   // state: computed during rendering.
   private boolean hidden = false;
@@ -24,12 +24,12 @@ public class Polygon {
   private Rectangle bounds = null;
 
   /** 	 */
-  public Polygon(Color r, Vector3D v1, Vector3D v2, Vector3D v3) {
+  public Polygon(Color r, PVector v1, PVector v2, PVector v3) {
     this.reflectivity = r;
     vertices[0] = v1;
     vertices[1] = v2;
     vertices[2] = v3;
-    normal = ((v2.minus(v1)).crossProduct(v3.minus(v2))).unitVector();
+    calculateNormal();
   }
 
   /*
@@ -40,21 +40,25 @@ public class Polygon {
     // System.out.println("s=" + s);
     Scanner sc = new Scanner(s);
     for (int v = 0; v < 3; v++) {
-      vertices[v] = new Vector3D(sc.nextFloat(), sc.nextFloat(), sc.nextFloat());
+      vertices[v] = new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat());
     }
     reflectivity = new Color(sc.nextInt(), sc.nextInt(), sc.nextInt());
-    normal = ((vertices[1].minus(vertices[0])).crossProduct(vertices[2].minus(vertices[1]))).unitVector();
+    calculateNormal();
   }
 
+  private void calculateNormal() {
+    normal = PVector.sub(vertices[1],vertices[0]).cross(PVector.sub(vertices[2],vertices[1]));
+    normal.normalize();
+  }
+  
   public void apply(Transform t) {
-    for (int v = 0; v < 3; v++) {
+    for (int v = 0; v < 3; v++)
       vertices[v] = t.multiply(vertices[v]);
-    }
-    normal = ((vertices[1].minus(vertices[0])).crossProduct(vertices[2].minus(vertices[1]))).unitVector();
+    calculateNormal();
     bounds = null;
   }
 
-  public Vector3D getNormal() {
+  public PVector getNormal() {
     return normal;
   }
 
@@ -66,8 +70,8 @@ public class Polygon {
     return hidden;
   }
 
-  public void computeShade(Vector3D lightSource, float ambient) {
-    float cosAngle = normal.cosTheta(lightSource);
+  public void computeShade(PVector lightSource, float ambient) {
+    float cosAngle = PVector.cosTheta(normal, lightSource);
     float reflect = ambient + ((cosAngle > 0) ? cosAngle : 0);
     // System.out.println("shade: ambient="+ambient+ " normal="+normal+
     // " lightSource="+ lightSource+ " cos="+cosAngle+ "reflect=" + reflect);
@@ -124,8 +128,8 @@ public class Polygon {
     // bounds.x+","+bounds.y+","+bounds.width+","+bounds.height);
     EdgeList[] ans = new EdgeList[bounds.height + 1];
     for (int edge = 0; edge < 3; edge++) { // for all 3 edges
-      Vector3D v1 = vertices[edge];
-      Vector3D v2 = vertices[(edge + 1) % 3];
+      PVector v1 = vertices[edge];
+      PVector v2 = vertices[(edge + 1) % 3];
       if (v1.y > v2.y) {
         v1 = v2;
         v2 = vertices[edge];
@@ -169,7 +173,7 @@ public class Polygon {
    * uses Bresenham's line algorithm for nicer edges. 
    * see: http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm 
    */
-  public void drawEdgeLine(EdgeList[] canvas, Vector3D A, Vector3D B){
+  public void drawEdgeLine(EdgeList[] canvas, PVector A, PVector B){
     
     /*
      TODO: http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm

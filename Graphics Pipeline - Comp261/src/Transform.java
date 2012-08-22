@@ -29,7 +29,7 @@ public class Transform {
   }
 
   /** Construct a translation Transformation based on a vector */
-  public static Transform newTranslation(Vector3D tr) {
+  public static Transform newTranslation(PVector tr) {
     return newTranslation(tr.x, tr.y, tr.z);
   }
 
@@ -39,7 +39,7 @@ public class Transform {
   }
 
   /** Construct a scaling Transformation given values in a vector */
-  public static Transform newScale(Vector3D sc) {
+  public static Transform newScale(PVector sc) {
     return newScale(sc.x, sc.y, sc.z);
   }
 
@@ -84,7 +84,7 @@ public class Transform {
   }
 
   /* apply this transform to a vector */
-  public Vector3D multiply(Vector3D vect) {
+  public PVector multiply(PVector vect) {
     if (values == null || values[0] == null || values[1] == null || values[2] == null) { throw new IllegalStateException("Ill-formed transform"); }
     if (vect == null) { throw new IllegalArgumentException("multiply by null vector"); }
     float x = values[0][3];
@@ -93,7 +93,7 @@ public class Transform {
     x += values[0][0] * vect.x + values[0][1] * vect.y + values[0][2] * vect.z;
     y += values[1][0] * vect.x + values[1][1] * vect.y + values[1][2] * vect.z;
     z += values[2][0] * vect.x + values[2][1] * vect.y + values[2][2] * vect.z;
-    return new Vector3D(x, y, z);
+    return new PVector(x, y, z);
   }
 
   public String toString() {

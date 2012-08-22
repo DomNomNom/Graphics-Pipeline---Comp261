@@ -22,7 +22,7 @@ public class Vector3D {
     this.x = x;
     this.y = y;
     this.z = z;
-    this.mag = (float) Math.sqrt(x * x + y * y + z * z);
+    this.mag = calculateMag();
   }
   
   public Vector3D(String line) {
@@ -30,7 +30,10 @@ public class Vector3D {
     this.x = s.nextFloat();
     this.y = s.nextFloat();
     this.z = s.nextFloat();
-    this.mag = (float) Math.sqrt(x * x + y * y + z * z);
+    this.mag = calculateMag();
+  }
+  private float calculateMag() {
+    return (float) Math.sqrt(x * x + y * y + z * z);
   }
 
   /** A private constructor, used only within this class */
@@ -44,7 +47,6 @@ public class Vector3D {
   /**
    * Constructs and returns a unit vector in the same direction as this vector.
    */
-
   public Vector3D unitVector() {
     if (mag <= 0.0)
       return new Vector3D(1.0f, 0.0f, 0.0f, 1.0f);

@@ -1,3 +1,4 @@
+import java.awt.Color;
 import java.awt.Rectangle;
 import java.awt.font.TransformAttribute;
 import java.io.File;
@@ -11,7 +12,7 @@ import javax.swing.JFrame;
 
 public class RenderPipeline {
   ArrayList<Polygon> polys = new ArrayList<Polygon>();
-  ArrayList<Vector3D> lights = new ArrayList<Vector3D>();
+  ArrayList<PVector> lights = new ArrayList<PVector>();
   
   ZBuffer zBuffer;
 
@@ -28,17 +29,28 @@ public class RenderPipeline {
     loadFile(inFile);
   }
   
-  public void loadFile(File inFile) {
+  private void loadFile(File inFile) {
     try {
       Scanner lineScan = new Scanner(inFile); // iterates over each line
       
-      lights.add(new Vector3D(lineScan.nextLine()));
+      Scanner sc = new Scanner(lineScan.nextLine()); 
+      lights.add(new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat()));
       // TODO read more lights
       
       while (lineScan.hasNextLine())
         polys.add(new Polygon(lineScan.nextLine()));
     }
-    catch (FileNotFoundException e) {  throw new Error(e); }
+    catch (FileNotFoundException e) { throw new Error(e); }
+  }
+  
+  private void loadPolygon(String line) {
+    Scanner sc = new Scanner(line);
+
+    PVector[] vertices = new PVector[3];
+    for (int v=0; v<3; ++v)
+      vertices[v] = new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat());
+
+    Color reflectivity = new Color(sc.nextInt(), sc.nextInt(), sc.nextInt());
   }
   
   public void render_wireFrame() {

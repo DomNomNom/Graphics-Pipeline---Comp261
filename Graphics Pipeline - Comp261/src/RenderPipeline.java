@@ -21,8 +21,9 @@ public class RenderPipeline {
   public final PVector size = new PVector(width, height);
   
   public float scale = 1.5f;
-  
+
   public PVector customTranslation = new PVector();
+  public PVector objectRotation = new PVector();
   
   public RenderPipeline() {
     zBuffer = new ZBuffer(width, height);
@@ -66,7 +67,7 @@ public class RenderPipeline {
   
   public void render_wireFrame() {
     Rectangle screenBounds = new Rectangle(width, height);
-    Transform transform = Transform.newScale(2, 2, 2); // TODO: translate properly
+    Transform transform = calculateTransform();
     for (Polygon p : polys) {
       p.apply(transform);
       Rectangle polyBounds = p.bounds();
@@ -96,23 +97,14 @@ public class RenderPipeline {
   
   public void render() {
     zBuffer.clear();
-    PVector average = new PVector();
-    for (Vertex v : Vertex.allVerticies)
-      average.add(v);
-    average.div(-Vertex.allVerticies.size());
+
+    Transform transform = calculateTransform();
     
     Rectangle screenBounds = new Rectangle(width, height);
-    Transform transform = Transform.identity();
-    transform = Transform.newTranslation(average             ).compose(transform); // move center to (0, 0)
-    transform = Transform.newScale(scale, scale, scale       ).compose(transform); // scale
-    
-    transform = Transform.newTranslation(customTranslation  ).compose(transform); // move to screen center
-    //transform = Transform.newTranslation(PVector.div(size, 2)).compose(transform); // move to screen center
-    
-    
+
     for (Polygon p : polys) {
       p.apply(transform);
-      if (p.getNormal().z > 0) continue;
+      if (p.getNormal().z > 0) continue; // don't draw polys that are facing away
       Rectangle polyBounds = p.bounds();
       if (! screenBounds.intersects(polyBounds)) continue; // don't even bother with things that aren't in our view
       int y = polyBounds.y;
@@ -146,6 +138,24 @@ public class RenderPipeline {
   
   public void render_phong() {
     // TODO
+  }
+  
+  private Transform calculateTransform() {
+    PVector average = new PVector();
+    for (Vertex v : Vertex.allVerticies)
+      average.add(v);
+    average.div(-Vertex.allVerticies.size());
+    
+    Transform transform = Transform.identity();
+    transform = Transform.newTranslation(average             ).compose(transform); // move center to (0, 0)
+    transform = Transform.newScale(scale, scale, scale       ).compose(transform); // scale
+    transform = Transform.newXRotation(objectRotation.y      ).compose(transform);
+    transform = Transform.newYRotation(objectRotation.x      ).compose(transform);
+    
+    transform = Transform.newTranslation(customTranslation  ).compose(transform); // move to screen center
+    //transform = Transform.newTranslation(PVector.div(size, 2)).compose(transform); // move to screen center
+    
+    return transform;
   }
   
   public static void main(String[] args) {

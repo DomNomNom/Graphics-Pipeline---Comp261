@@ -2,14 +2,17 @@ import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Graphics;
 import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.WindowConstants;
 
 
-public class GUI implements MouseMotionListener {
+public class GUI implements MouseMotionListener, MouseListener {
+  public static final float rotationSpeed = 0.004f;
   final BufferedImage image;
   int mouseX, mouseY;
   boolean redraw;
@@ -18,14 +21,13 @@ public class GUI implements MouseMotionListener {
   JFrame myFrame;
   JComponent imageComp;
   int[] colours;
-  private boolean currentlyRendering = false;
+  private boolean justRendered = false;
   private RenderPipeline p;
   
   public GUI(RenderPipeline p) {
     this.p = p;
     colours = p.zBuffer.colours;
     image = new BufferedImage(p.width, p.height, BufferedImage.TYPE_INT_RGB);
-    myFrame = new JFrame("Render Pipeline");
     imageComp = new JComponent() {
       @Override
       protected void paintComponent(Graphics g) {
@@ -33,29 +35,23 @@ public class GUI implements MouseMotionListener {
       }
     };
     imageComp.setPreferredSize(new Dimension(p.width, p.height));
+    myFrame = new JFrame("Render Pipeline");
+    myFrame.setDefaultCloseOperation(WindowConstants.EXIT_ON_CLOSE);
+    myFrame.setResizable(false);
     myFrame.add(imageComp, BorderLayout.CENTER);
-    myFrame.addMouseMotionListener(new MouseMotionListener() {
-      
-      @Override
-      public void mouseMoved(MouseEvent e) {
-        mouseX = e.getX();
-        mouseY = e.getY();
-        redraw = true;
-      }
-      
-      @Override
-      public void mouseDragged(MouseEvent e) {}
-    });
-    myFrame.pack();
-    startRendering();
+    myFrame.addMouseListener(this);
     myFrame.addMouseMotionListener(this);
+
+    myFrame.pack();
+
+    startRendering();
   }
 
-  public synchronized void startRendering() {
-    if (!currentlyRendering) {
-      currentlyRendering = true;
+  public void startRendering() {
+    // draw unless we have drawn very recently
+    if (!justRendered) {
+      justRendered = true;
       p.render();
-      currentlyRendering = false;
     }
   }
   
@@ -65,7 +61,8 @@ public class GUI implements MouseMotionListener {
     //animation loop
     while(running){
       imageComp.repaint();
-      try {  Thread.sleep(30);  }
+      justRendered = false;
+      try {  Thread.sleep(15);  }
       catch (InterruptedException e) { throw new Error(e); }
     }
   }
@@ -82,11 +79,31 @@ public class GUI implements MouseMotionListener {
   
   @Override
   public void mouseDragged(MouseEvent e) {
+    // TODO: light rotation (ctrl)
+    p.objectRotation.x += (e.getX() - mouseX) * -rotationSpeed;
+    p.objectRotation.y += (e.getY() - mouseY) *  rotationSpeed;
+    recordMousePos(e);
+    startRendering();
   }
 
   @Override
   public void mouseMoved(MouseEvent e) {
-    p.customTranslation = new PVector(e.getPoint().x, e.getPoint().y);
+    recordMousePos(e);
+    p.customTranslation.x = mouseX;
+    p.customTranslation.y = mouseY;
     startRendering();
+  }
+
+  public void mouseClicked(MouseEvent arg0) {}
+  public void mouseEntered(MouseEvent arg0) {}
+  public void mouseExited(MouseEvent arg0) {}
+  public void mouseReleased(MouseEvent arg0) {}
+  public void mousePressed(MouseEvent e) {
+    recordMousePos(e);
+  }
+  
+  private void recordMousePos(MouseEvent e){
+    mouseX = e.getX();
+    mouseY = e.getY();
   }
 }

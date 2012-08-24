@@ -32,8 +32,10 @@ public class Vertex extends PVector {
    * If you want to have a vertex that is at the same place as another,
    * you may only use the original vertex.
    * If it is at a new position, a new vertex gets created.
+   * 
+   * please only read from allVerticies.
    */
-  private static List<Vertex> allVerticies = new ArrayList<Vertex>();
+  public static List<Vertex> allVerticies = new ArrayList<Vertex>();
   public static Vertex vertex(PVector pos) {
     // check whether this vertex already exists
     for (Vertex v : allVerticies)

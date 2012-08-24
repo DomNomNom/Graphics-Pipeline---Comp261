@@ -13,7 +13,8 @@ import java.awt.Rectangle;
  */
 public class Polygon {
 
-  private PVector[] vertices = new PVector[3];
+  private PVector[] vertices         = new PVector[3];
+  private PVector[] originalVertices = new PVector[3];
   private Color reflectivity;
   private PVector normal;
 
@@ -23,15 +24,24 @@ public class Polygon {
   private int shade_int;
   private Rectangle bounds = null;
 
-  /** 	 */
   public Polygon(Color r, PVector v1, PVector v2, PVector v3) {
     this.reflectivity = r;
-    vertices[0] = v1;
-    vertices[1] = v2;
-    vertices[2] = v3;
+    originalVertices[0] = v1;
+    originalVertices[1] = v2;
+    originalVertices[2] = v3;
+    copyVertices();
     calculateNormal();
   }
 
+  public Polygon(Color r, Vertex[] vs) {
+    reflectivity = r;
+    originalVertices[0] = vs[0];
+    originalVertices[1] = vs[1];
+    originalVertices[2] = vs[2];
+    copyVertices();
+    calculateNormal();
+  }
+  
   /*
    * Assumes that the string has 12 numbers: 3 vertices and a
    * colour/reflectivity
@@ -39,10 +49,10 @@ public class Polygon {
   public Polygon(String s) {
     // System.out.println("s=" + s);
     Scanner sc = new Scanner(s);
-    for (int v = 0; v < 3; v++) {
-      vertices[v] = new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat());
-    }
+    for (int v = 0; v < 3; v++)
+      originalVertices[v] = new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat());
     reflectivity = new Color(sc.nextInt(), sc.nextInt(), sc.nextInt());
+    copyVertices();
     calculateNormal();
   }
 
@@ -52,10 +62,15 @@ public class Polygon {
   }
   
   public void apply(Transform t) {
-    for (int v = 0; v < 3; v++)
-      vertices[v] = t.multiply(vertices[v]);
+    for (int v = 0; v<3; v++)
+      vertices[v] = t.multiply(originalVertices[v]);
     calculateNormal();
     bounds = null;
+  }
+
+  private void copyVertices() {
+    for (int v = 0; v<3; v++)
+      vertices[v] = originalVertices[v];
   }
 
   public PVector getNormal() {
@@ -161,7 +176,7 @@ public class Polygon {
   }
 
   public EdgeList[] computeEdgeLists_bresehams() {
-
+// TODO
     bounds();
     EdgeList[] ans = new EdgeList[bounds.height + 1];
     for (int edge = 0; edge < 3; edge++) // for all 3 edges put the points into a edgeList

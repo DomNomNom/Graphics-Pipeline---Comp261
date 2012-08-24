@@ -9,7 +9,7 @@ import javax.swing.JComponent;
 import javax.swing.JFrame;
 
 
-public class GUI {
+public class GUI implements MouseMotionListener {
   final BufferedImage image;
   int mouseX, mouseY;
   boolean redraw;
@@ -18,10 +18,13 @@ public class GUI {
   JFrame myFrame;
   JComponent imageComp;
   int[] colours;
+  private boolean currentlyRendering = false;
+  private RenderPipeline p;
   
-  public GUI(int[] colours, int width, int height) {
-    this.colours = colours;
-    image = new BufferedImage(width, height, BufferedImage.TYPE_INT_RGB);
+  public GUI(RenderPipeline p) {
+    this.p = p;
+    colours = p.zBuffer.colours;
+    image = new BufferedImage(p.width, p.height, BufferedImage.TYPE_INT_RGB);
     myFrame = new JFrame("Render Pipeline");
     imageComp = new JComponent() {
       @Override
@@ -29,7 +32,7 @@ public class GUI {
         draw(g);
       }
     };
-    imageComp.setPreferredSize(new Dimension(width, height));
+    imageComp.setPreferredSize(new Dimension(p.width, p.height));
     myFrame.add(imageComp, BorderLayout.CENTER);
     myFrame.addMouseMotionListener(new MouseMotionListener() {
       
@@ -44,6 +47,16 @@ public class GUI {
       public void mouseDragged(MouseEvent e) {}
     });
     myFrame.pack();
+    startRendering();
+    myFrame.addMouseMotionListener(this);
+  }
+
+  public synchronized void startRendering() {
+    if (!currentlyRendering) {
+      currentlyRendering = true;
+      p.render();
+      currentlyRendering = false;
+    }
   }
   
   public void mainLoop() {
@@ -52,7 +65,7 @@ public class GUI {
     //animation loop
     while(running){
       imageComp.repaint();
-      try {  Thread.sleep(15);  }
+      try {  Thread.sleep(30);  }
       catch (InterruptedException e) { throw new Error(e); }
     }
   }
@@ -64,5 +77,16 @@ public class GUI {
   void draw(Graphics g){
     image.setRGB(0, 0, image.getWidth(), image.getHeight(), colours, 0, image.getWidth());
     g.drawImage(image, 0, 0, null);
+  }
+
+  
+  @Override
+  public void mouseDragged(MouseEvent e) {
+  }
+
+  @Override
+  public void mouseMoved(MouseEvent e) {
+    p.customTranslation = new PVector(e.getPoint().x, e.getPoint().y);
+    startRendering();
   }
 }

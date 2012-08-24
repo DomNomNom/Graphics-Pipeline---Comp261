@@ -11,8 +11,14 @@ public class ZBuffer {
     ht = height;
     depths = new float[wd * ht];
     colours = new int[wd * ht];
-    for (int i=0; i<wd*ht; ++i) 
+    clear();
+  }
+  
+  public void clear() {
+    for (int i=0; i<wd*ht; ++i) {
+      colours[i] = 0; // background colour
       depths[i] = Float.POSITIVE_INFINITY; // initialize the depth so it will always me overwritten
+    }
   }
   
   void lockLine(int y) {
@@ -21,7 +27,7 @@ public class ZBuffer {
   void releaseLine(int y) {/*TODO*/}
   
   void add(int colour, int x, int y, float z) {
-    if (x>wd || y>ht) return; // don't accept invalid coordinates
+    if (x<0 || y<0 || x>=wd || y>=ht) return; // don't accept invalid coordinates
     int i = x + y*ht; // our current index  TODO: optimize?
     if (z < depths[i]) {
       depths[i] = z;

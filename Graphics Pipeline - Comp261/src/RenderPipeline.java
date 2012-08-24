@@ -1,13 +1,11 @@
 import java.awt.Color;
 import java.awt.Rectangle;
-import java.awt.font.TransformAttribute;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
 import javax.swing.JFileChooser;
-import javax.swing.JFrame;
 
 
 public class RenderPipeline {
@@ -16,15 +14,22 @@ public class RenderPipeline {
   
   ZBuffer zBuffer;
 
+  enum renderMode { WIREFRAME, FLAT, PHONG };
+  
   public final int width = 500;
   public final int height = 500;
+  public final PVector size = new PVector(width, height);
+  
+  public float scale = 1.5f;
+  
+  public PVector customTranslation = new PVector();
   
   public RenderPipeline() {
     zBuffer = new ZBuffer(width, height);
-    File inFile; // = new File("data/blocks1.txt");
+    File inFile = new File("data/monkey.txt");
     JFileChooser fc  = new JFileChooser("data");
-    fc.showOpenDialog(new JFrame());
-    inFile = fc.getSelectedFile();
+    //fc.showOpenDialog(new JFrame());
+    //inFile = fc.getSelectedFile();  // TODO: uncomment
     if (inFile == null) throw new Error("bad file");
     loadFile(inFile);
   }
@@ -38,19 +43,25 @@ public class RenderPipeline {
       // TODO read more lights
       
       while (lineScan.hasNextLine())
-        polys.add(new Polygon(lineScan.nextLine()));
+        polys.add(loadPolygon(lineScan.nextLine()));
     }
     catch (FileNotFoundException e) { throw new Error(e); }
   }
   
-  private void loadPolygon(String line) {
+  private Polygon loadPolygon(String line) {
     Scanner sc = new Scanner(line);
 
-    PVector[] vertices = new PVector[3];
+    Vertex[] vertices = new Vertex[3];
     for (int v=0; v<3; ++v)
-      vertices[v] = new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat());
+      vertices[v] = Vertex.vertex(new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat()));
 
     Color reflectivity = new Color(sc.nextInt(), sc.nextInt(), sc.nextInt());
+    Polygon newPoly = new Polygon(reflectivity, vertices);
+    
+    for (Vertex v : vertices)
+      v.addPolygon(newPoly);
+    
+    return newPoly;
   }
   
   public void render_wireFrame() {
@@ -84,8 +95,21 @@ public class RenderPipeline {
   }
   
   public void render() {
+    zBuffer.clear();
+    PVector average = new PVector();
+    for (Vertex v : Vertex.allVerticies)
+      average.add(v);
+    average.div(-Vertex.allVerticies.size());
+    
     Rectangle screenBounds = new Rectangle(width, height);
-    Transform transform = Transform.newScale(2, 2, 2); // TODO: translate properly
+    Transform transform = Transform.identity();
+    transform = Transform.newTranslation(average             ).compose(transform); // move center to (0, 0)
+    transform = Transform.newScale(scale, scale, scale       ).compose(transform); // scale
+    
+    transform = Transform.newTranslation(customTranslation  ).compose(transform); // move to screen center
+    //transform = Transform.newTranslation(PVector.div(size, 2)).compose(transform); // move to screen center
+    
+    
     for (Polygon p : polys) {
       p.apply(transform);
       if (p.getNormal().z > 0) continue;
@@ -98,19 +122,19 @@ public class RenderPipeline {
       zBuffer.lockLine(y);
       for (EdgeList list : lists) {
         if (list == null) continue;
-        if (! screenBounds.contains(0, y)) continue; // don't bother with lines that aren't in the screen 
+        //if (! screenBounds.contains(0, y)) continue; // don't bother with lines that aren't in the screen 
         
         int minX = (int) Math.floor(list.l_x);
         int maxX = (int) Math.floor(list.r_x); // we are flooring but iterating to include that pixel
         if (minX == maxX) ++maxX; // we should at least have a 1 pixel (so we don't get division by 0 below)
-        if (maxX < 0  ||  minX >= height) continue; //don't draw anything that can't be seen
+        //if (maxX < 0  ||  minX > width)  continue; //don't draw anything that can't be seen
+        // note: the previous check was removed as it somehow was omitting things that should be viewd on edges
         float deltaZ = (list.r_z - list.l_z) / (float)(maxX - minX);
         float z = list.l_z;
         
         for (int x=minX;  x<=maxX;  ++x, z+=deltaZ) {
-          if (x<0 || x>=height) continue; // don't draw of the side of the screen (these would wrap)
-          // TODO: complex normal-interpolation
-          //System.out.println(x + "\t" + y);
+          if (x<0 || x>=width) continue; // don't draw of the side of the screen (these would wrap)
+          // TODO: normal-interpolation
           zBuffer.add(p.getShade_int(), x, y, z);
         }
         
@@ -120,13 +144,15 @@ public class RenderPipeline {
     }
   }
   
+  public void render_phong() {
+    // TODO
+  }
+  
   public static void main(String[] args) {
     RenderPipeline p = new RenderPipeline();
     //p.render_wireFrame();
-    p.render();
     
-
-    GUI gui = new GUI(p.zBuffer.colours, p.height, p.width);
+    GUI gui = new GUI(p);
     gui.mainLoop();
     
     

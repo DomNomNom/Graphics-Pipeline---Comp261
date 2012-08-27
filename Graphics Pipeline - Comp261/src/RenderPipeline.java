@@ -6,11 +6,12 @@ import java.util.ArrayList;
 import java.util.Scanner;
 
 import javax.swing.JFileChooser;
+import javax.swing.JFrame;
 
 
 public class RenderPipeline {
   ArrayList<Polygon> polys = new ArrayList<Polygon>();
-  ArrayList<PVector> lights = new ArrayList<PVector>();
+  ArrayList<Light> lights = new ArrayList<Light>();
   
   ZBuffer zBuffer;
 
@@ -19,18 +20,20 @@ public class RenderPipeline {
   public final int width = 500;
   public final int height = 500;
   public final PVector size = new PVector(width, height);
-  
+  Rectangle screenBounds = new Rectangle(width, height);
+
   public float scale = 1.5f;
 
-  public PVector customTranslation = new PVector();
+  public PVector customTranslation = PVector.mult(size, 0.5f);
   public PVector objectRotation = new PVector();
+  public PVector lightRotation = new PVector();
   
   public RenderPipeline() {
     zBuffer = new ZBuffer(width, height);
     File inFile = new File("data/monkey.txt");
     JFileChooser fc  = new JFileChooser("data");
-    //fc.showOpenDialog(new JFrame());
-    //inFile = fc.getSelectedFile();  // TODO: uncomment
+    fc.showOpenDialog(new JFrame());
+    inFile = fc.getSelectedFile();  // TODO: uncomment
     if (inFile == null) throw new Error("bad file");
     loadFile(inFile);
   }
@@ -40,7 +43,7 @@ public class RenderPipeline {
       Scanner lineScan = new Scanner(inFile); // iterates over each line
       
       Scanner sc = new Scanner(lineScan.nextLine()); 
-      lights.add(new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat()));
+      lights.add(new Light(new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat())));
       // TODO read more lights
       
       while (lineScan.hasNextLine())
@@ -66,7 +69,6 @@ public class RenderPipeline {
   }
   
   public void render_wireFrame() {
-    Rectangle screenBounds = new Rectangle(width, height);
     Transform transform = calculateTransform();
     for (Polygon p : polys) {
       p.apply(transform);
@@ -98,9 +100,14 @@ public class RenderPipeline {
   public void render() {
     zBuffer.clear();
 
-    Transform transform = calculateTransform();
+    Transform lightTransform = Transform.identity();
+    lightTransform = Transform.newXRotation(lightRotation.y ).compose(lightTransform);
+    lightTransform = Transform.newYRotation(lightRotation.x ).compose(lightTransform);
+    for (Light light : lights)
+      light.apply(lightTransform);
     
-    Rectangle screenBounds = new Rectangle(width, height);
+    
+    Transform transform = calculateTransform();
 
     for (Polygon p : polys) {
       p.apply(transform);
@@ -152,7 +159,7 @@ public class RenderPipeline {
     transform = Transform.newXRotation(objectRotation.y      ).compose(transform);
     transform = Transform.newYRotation(objectRotation.x      ).compose(transform);
     
-    transform = Transform.newTranslation(customTranslation  ).compose(transform); // move to screen center
+    transform = Transform.newTranslation(customTranslation  ).compose(transform); // move to mouse
     //transform = Transform.newTranslation(PVector.div(size, 2)).compose(transform); // move to screen center
     
     return transform;

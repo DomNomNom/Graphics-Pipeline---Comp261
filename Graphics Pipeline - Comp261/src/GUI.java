@@ -80,8 +80,14 @@ public class GUI implements MouseMotionListener, MouseListener {
   @Override
   public void mouseDragged(MouseEvent e) {
     // TODO: light rotation (ctrl)
-    p.objectRotation.x += (e.getX() - mouseX) * -rotationSpeed;
-    p.objectRotation.y += (e.getY() - mouseY) *  rotationSpeed;
+    if (e.isControlDown()) {
+      p.lightRotation.x += (e.getX() - mouseX) * -rotationSpeed;
+      p.lightRotation.y += (e.getY() - mouseY) *  rotationSpeed;
+    }
+    else {
+      p.objectRotation.x += (e.getX() - mouseX) * -rotationSpeed;
+      p.objectRotation.y += (e.getY() - mouseY) *  rotationSpeed;
+    }
     recordMousePos(e);
     startRendering();
   }

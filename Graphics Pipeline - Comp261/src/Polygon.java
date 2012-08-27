@@ -155,7 +155,7 @@ public class Polygon {
       float mz = (v2.z - v1.z) / (v2.y - v1.y);
 
       int scanLine = (int) Math.ceil(v1.y - bounds.y);
-      double maxScanLine = Math.ceil(v2.y - bounds.y);
+      double maxScanLine = Math.round(v2.y - bounds.y);
 
       // System.out.println("edgelist from: ("+v1.x+","+v1.y+","+v1.z+")-("+v2.x+","+v2.y+","+v2.z+") @ scanline "+scanLine+
       // " of "+ans.length + " starting at bounds.y =" + bounds.y + "mx="+mx);

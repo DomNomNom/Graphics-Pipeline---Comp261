@@ -1,17 +1,25 @@
 import java.awt.BorderLayout;
 import java.awt.Dimension;
 import java.awt.Graphics;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.awt.event.KeyEvent;
+import java.awt.event.KeyListener;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.awt.event.MouseMotionListener;
+import java.awt.event.MouseWheelEvent;
+import java.awt.event.MouseWheelListener;
 import java.awt.image.BufferedImage;
 
 import javax.swing.JComponent;
 import javax.swing.JFrame;
+import javax.swing.KeyStroke;
+import javax.swing.UIManager;
 import javax.swing.WindowConstants;
 
 
-public class GUI implements MouseMotionListener, MouseListener {
+public class GUI implements MouseMotionListener, MouseListener, MouseWheelListener {
   public static final float rotationSpeed = 0.004f;
   final BufferedImage image;
   int mouseX, mouseY;
@@ -41,7 +49,16 @@ public class GUI implements MouseMotionListener, MouseListener {
     myFrame.add(imageComp, BorderLayout.CENTER);
     myFrame.addMouseListener(this);
     myFrame.addMouseMotionListener(this);
+    myFrame.addMouseWheelListener(this);
+    myFrame.getRootPane().registerKeyboardAction(
+      new ActionListener() {
+        public void actionPerformed(ActionEvent e) { myFrame.setVisible(false); running = false; }
+      },
+      KeyStroke.getKeyStroke(KeyEvent.VK_ESCAPE, 0),
+      JComponent.WHEN_IN_FOCUSED_WINDOW
+    );
 
+    
     myFrame.pack();
 
     startRendering();
@@ -79,7 +96,6 @@ public class GUI implements MouseMotionListener, MouseListener {
   
   @Override
   public void mouseDragged(MouseEvent e) {
-    // TODO: light rotation (ctrl)
     if (e.isControlDown()) {
       p.lightRotation.x += (e.getX() - mouseX) * -rotationSpeed;
       p.lightRotation.y += (e.getY() - mouseY) *  rotationSpeed;
@@ -111,5 +127,11 @@ public class GUI implements MouseMotionListener, MouseListener {
   private void recordMousePos(MouseEvent e){
     mouseX = e.getX();
     mouseY = e.getY();
+  }
+
+  @Override
+  public void mouseWheelMoved(MouseWheelEvent e) {
+    p.scale = p.scale + p.scale*0.25f*e.getWheelRotation();
+    startRendering();
   }
 }

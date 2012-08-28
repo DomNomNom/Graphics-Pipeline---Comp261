@@ -1,12 +1,16 @@
+import java.awt.Color;
 import java.util.*;
 
 
 public class Vertex extends PVector {
   private static final long serialVersionUID = -5596774444508887096L;
 
-  //private PVector pos; // position
-  private PVector normal = null; // the average of the polygon normals
+  private static final float maximumEqualDistance = 0f;
+  
   private List<Polygon> polys = new ArrayList<Polygon>(); // the polygons we're attached to
+  private PVector normal = null; // the average of the polygon normals
+  private Color reflectivity = null;
+  
   private Vertex(PVector pos) {
     x = pos.x;
     y = pos.y;
@@ -24,8 +28,11 @@ public class Vertex extends PVector {
     normal = new PVector(0,0,0);
     for (Polygon pp : polys)
       normal.add(pp.getNormal());
+    normal.normalize();
     return normal;
   }
+  
+  
   
   /**
    * A Factory for Vertices 
@@ -40,11 +47,23 @@ public class Vertex extends PVector {
     // check whether this vertex already exists
     for (Vertex v : allVerticies)
       if (v.equals(pos))
+      //if (PVector.sub(v, pos).magSq() <= maximumEqualDistance)
         return v; // use the existing vertex
     
     // create a new one
     Vertex newVertex = new Vertex(pos);
     allVerticies.add(newVertex);
+    return newVertex;
+  }
+  
+  /** 
+   * Returns a new Vertex with the given transformation applied to it.
+   * This vertex will not be a element of allVerticies
+   */
+  public Vertex applyTransformCopy(Transform t) {
+    Vertex newVertex = new Vertex(t.multiply(this));
+    newVertex.normal = null;
+    newVertex.polys = this.polys;
     return newVertex;
   }
   

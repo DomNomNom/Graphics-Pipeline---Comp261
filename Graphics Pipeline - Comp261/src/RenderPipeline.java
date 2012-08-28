@@ -108,14 +108,15 @@ public class RenderPipeline {
     
     
     Transform transform = calculateTransform();
+    for (Polygon p : polys)
+      p.apply(transform);
 
     for (Polygon p : polys) {
-      p.apply(transform);
       if (p.getNormal().z > 0) continue; // don't draw polys that are facing away
       Rectangle polyBounds = p.bounds();
       if (! screenBounds.intersects(polyBounds)) continue; // don't even bother with things that aren't in our view
       int y = polyBounds.y;
-      p.computeShade(lights.get(0), 0.5f);
+      p.computeShade(lights.get(0), 0.1f);
       EdgeList[] lists = p.computeEdgeLists();
       
       zBuffer.lockLine(y);
@@ -123,18 +124,25 @@ public class RenderPipeline {
         if (list == null) continue;
         //if (! screenBounds.contains(0, y)) continue; // don't bother with lines that aren't in the screen 
         
-        int minX = (int) Math.floor(list.l_x);
+        int minX = (int) Math.ceil(list.l_x);
         int maxX = (int) Math.floor(list.r_x); // we are flooring but iterating to include that pixel
         if (minX == maxX) ++maxX; // we should at least have a 1 pixel (so we don't get division by 0 below)
         //if (maxX < 0  ||  minX > width)  continue; //don't draw anything that can't be seen
-        // note: the previous check was removed as it somehow was omitting things that should be viewd on edges
-        float deltaZ = (list.r_z - list.l_z) / (float)(maxX - minX);
+        // note: the previous check was removed as it somehow was omitting things that should be viewed on screen edges
+        int steps = (int) (maxX - minX);
         float z = list.l_z;
+        float deltaZ = (list.r_z - list.l_z) / (steps);
+
+        PVector normal = list.l_normal;
+        PVector normalizedNormal = new PVector();
+        PVector deltaNormal = PVector.sub(list.r_normal, list.l_normal);
+        deltaNormal.div(steps);
         
-        for (int x=minX;  x<=maxX;  ++x, z+=deltaZ) {
+        for (int x=minX;  x<=maxX;  ++x, z+=deltaZ, normal.add(deltaNormal)) {
           if (x<0 || x>=width) continue; // don't draw of the side of the screen (these would wrap)
-          // TODO: normal-interpolation
-          zBuffer.add(p.getShade_int(), x, y, z);
+          normal.normalize(normalizedNormal);
+          //zBuffer.add(p.getShade_int(), x, y, z); // flat shading
+          zBuffer.add(p.computeShade_phong(lights.get(0), normalizedNormal, 0.1f), x, y, z);
         }
         
         ++y; // next line
@@ -174,5 +182,6 @@ public class RenderPipeline {
     
     
     System.out.println("done :)");
+    System.exit(0);
   }
 }

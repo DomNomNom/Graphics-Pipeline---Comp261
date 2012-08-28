@@ -13,18 +13,17 @@ import java.awt.Rectangle;
  */
 public class Polygon {
 
-  private PVector[] vertices         = new PVector[3];
-  private PVector[] originalVertices = new PVector[3];
+  private Vertex[] vertices         = new Vertex[3];
+  private Vertex[] originalVertices = new Vertex[3];
   private Color reflectivity;
   private PVector normal;
 
   // state: computed during rendering.
   private boolean hidden = false;
-  private Color shade;
   private int shade_int;
   private Rectangle bounds = null;
 
-  public Polygon(Color r, PVector v1, PVector v2, PVector v3) {
+  public Polygon(Color r, Vertex v1, Vertex v2, Vertex v3) {
     this.reflectivity = r;
     originalVertices[0] = v1;
     originalVertices[1] = v2;
@@ -50,7 +49,7 @@ public class Polygon {
     // System.out.println("s=" + s);
     Scanner sc = new Scanner(s);
     for (int v = 0; v < 3; v++)
-      originalVertices[v] = new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat());
+      originalVertices[v] = Vertex.vertex(new PVector(sc.nextFloat(), sc.nextFloat(), sc.nextFloat()));
     reflectivity = new Color(sc.nextInt(), sc.nextInt(), sc.nextInt());
     copyVertices();
     calculateNormal();
@@ -63,7 +62,7 @@ public class Polygon {
   
   public void apply(Transform t) {
     for (int v = 0; v<3; v++)
-      vertices[v] = t.multiply(originalVertices[v]);
+      vertices[v] = originalVertices[v].applyTransformCopy(t); //t.multiply(originalVertices[v]);
     calculateNormal();
     bounds = null;
   }
@@ -96,20 +95,29 @@ public class Polygon {
     // System.out.println("color:" +
     // reflectivity.getRed()+","+reflectivity.getGreen()+","+reflectivity.getBlue()+
     // " -> shade:" + red+","+green+","+blue);
-    shade = new Color(red, green, blue);
     shade_int = red<<16 | green<<8 | blue;
   }
 
-  public Color getShade() { // TODO: remove me
-    return shade;
+  public int computeShade_phong(PVector lightSource, PVector mySurfaceNormal, float ambient) {
+    float cosAngle = PVector.cosTheta(mySurfaceNormal, lightSource);
+    float reflect = ambient + ((cosAngle > 0) ? cosAngle : 0);
+    // System.out.println("shade: ambient="+ambient+ " normal="+normal+
+    // " lightSource="+ lightSource+ " cos="+cosAngle+ "reflect=" + reflect);
+    int red = Math.max(0, Math.min(255, (int) (reflectivity.getRed() * reflect)));
+    int green = Math.max(0, Math.min(255, (int) (reflectivity.getGreen() * reflect)));
+    int blue = Math.max(0, Math.min(255, (int) (reflectivity.getBlue() * reflect)));
+    // System.out.println("color:" +
+    // reflectivity.getRed()+","+reflectivity.getGreen()+","+reflectivity.getBlue()+
+    // " -> shade:" + red+","+green+","+blue);
+    return red<<16 | green<<8 | blue;
   }
+  
   public int getShade_int() {
     return shade_int;
   }
 
   public void reset() {
     hidden = false;
-    shade = null;
   }
 
   /**
@@ -143,28 +151,35 @@ public class Polygon {
     // bounds.x+","+bounds.y+","+bounds.width+","+bounds.height);
     EdgeList[] ans = new EdgeList[bounds.height + 1];
     for (int edge = 0; edge < 3; edge++) { // for all 3 edges
-      PVector v1 = vertices[edge];
-      PVector v2 = vertices[(edge + 1) % 3];
+      Vertex v1 = vertices[edge];
+      Vertex v2 = vertices[(edge + 1) % 3];
       if (v1.y > v2.y) {
         v1 = v2;
         v2 = vertices[edge];
       }
+
+      int scanLine = (int)(v1.y - bounds.y);
+      //int maxScanLine = Math.round(v2.y - bounds.y);
+      int numSteps = (int)(v2.y - v1.y) + 1; 
       float x = v1.x;
       float z = v1.z;
-      float mx = (v2.x - v1.x) / (v2.y - v1.y);
-      float mz = (v2.z - v1.z) / (v2.y - v1.y);
-
-      int scanLine = (int) Math.ceil(v1.y - bounds.y);
-      double maxScanLine = Math.round(v2.y - bounds.y);
+      PVector norm = new PVector(v1.normal()); // our interpolated normal
+      //System.out.println(norm);
+      
+      // the step-change for the above variables
+      float mx = (v2.x - v1.x) / (numSteps);
+      float mz = (v2.z - v1.z) / (numSteps);
+      PVector m_norm = PVector.sub(v2.normal(), v1.normal()); // our interpolated normal step
+      m_norm.div(numSteps);
 
       // System.out.println("edgelist from: ("+v1.x+","+v1.y+","+v1.z+")-("+v2.x+","+v2.y+","+v2.z+") @ scanline "+scanLine+
       // " of "+ans.length + " starting at bounds.y =" + bounds.y + "mx="+mx);
-      for (; scanLine <= maxScanLine; scanLine++, x += mx, z += mz) {
+      for (int i=0; /*scanLine <= maxScanLine;*/ i<numSteps; ++i, scanLine++, x += mx, z += mz, norm.add(m_norm)) {
         // System.out.println(" x=" + x + " z=" + z + "@scanLine=" + scanLine);
         if (ans[scanLine] == null)
-          ans[scanLine] = new EdgeList(x, z);
+          ans[scanLine] = new EdgeList(x, z, norm); // TODO
         else
-          ans[scanLine].add(x, z);
+          ans[scanLine].add(x, z, norm);
       }
       /*
        for (int i=0; i<ans.length; i++){EdgeList e = ans[i];
@@ -226,9 +241,9 @@ public class Polygon {
     f.format("c:(%3d-%3d-%3d)", reflectivity.getRed(), reflectivity.getGreen(), reflectivity.getBlue());
     bounds();
     f.format("b:(%3d %3d %3d %3d)", bounds.x, bounds.y, bounds.width, bounds.height);
-    if (shade != null) {
-      f.format("s:(%3d-%3d-%3d)", shade.getRed(), shade.getGreen(), shade.getBlue());
-    }
+    //if (shade != null) {
+    //  f.format("s:(%3d-%3d-%3d)", shade.getRed(), shade.getGreen(), shade.getBlue());
+    //}
     return ans.toString();
   }
 

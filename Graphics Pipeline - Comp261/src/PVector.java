@@ -148,6 +148,13 @@ public class PVector implements Serializable {
   }
 
 
+  public PVector(PVector other) {
+    this.x = other.x;
+    this.y = other.y;
+    this.z = other.z;
+  }
+
+
   /**
    * ( begin auto-generated from PVector_set.xml )
    * 

@@ -70,6 +70,7 @@ public class RenderPipeline {
   
   public void render_wireFrame() {
     Transform transform = calculateTransform();
+    zBuffer.clear();
     for (Polygon p : polys) {
       p.apply(transform);
       Rectangle polyBounds = p.bounds();
@@ -81,12 +82,11 @@ public class RenderPipeline {
       zBuffer.lockLine(y);
       for (EdgeList list : lists) {
         if (list == null) continue;
-        if (! screenBounds.contains(0, y)) continue; // don't bother with lines that aren't in the screen 
+        // if (! screenBounds.contains(0, y)) continue; // don't bother with lines that aren't in the screen 
         
         int minX = (int) Math.floor(list.l_x);
         int maxX = (int) Math.floor(list.r_x); // we are flooring but iterating to include that pixel
         if (minX == maxX) ++maxX; // we should at least have a 1 pixel (so we don't get division by 0 below)
-        if (maxX < 0  ||  minX >= height) continue; //don't draw anything that can't be seen
 
         zBuffer.add(p.getShade_int(), minX, y, list.l_z);
         zBuffer.add(p.getShade_int(), maxX, y, list.r_z);
@@ -151,10 +151,6 @@ public class RenderPipeline {
     }
   }
   
-  public void render_phong() {
-    // TODO
-  }
-  
   private Transform calculateTransform() {
     PVector average = new PVector();
     for (Vertex v : Vertex.allVerticies)
@@ -175,7 +171,6 @@ public class RenderPipeline {
   
   public static void main(String[] args) {
     RenderPipeline p = new RenderPipeline();
-    //p.render_wireFrame();
     
     GUI gui = new GUI(p);
     gui.mainLoop();

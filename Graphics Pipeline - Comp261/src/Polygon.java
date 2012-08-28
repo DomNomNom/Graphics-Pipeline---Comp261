@@ -16,6 +16,7 @@ public class Polygon {
   private Vertex[] vertices         = new Vertex[3];
   private Vertex[] originalVertices = new Vertex[3];
   private Color reflectivity;
+  private Color averageReflectivity;
   private PVector normal;
 
   // state: computed during rendering.
@@ -89,6 +90,7 @@ public class Polygon {
     float reflect = ambient + ((cosAngle > 0) ? cosAngle : 0);
     // System.out.println("shade: ambient="+ambient+ " normal="+normal+
     // " lightSource="+ lightSource+ " cos="+cosAngle+ "reflect=" + reflect);
+    
     int red = Math.max(0, Math.min(255, (int) (reflectivity.getRed() * reflect)));
     int green = Math.max(0, Math.min(255, (int) (reflectivity.getGreen() * reflect)));
     int blue = Math.max(0, Math.min(255, (int) (reflectivity.getBlue() * reflect)));
@@ -103,6 +105,9 @@ public class Polygon {
     float reflect = ambient + ((cosAngle > 0) ? cosAngle : 0);
     // System.out.println("shade: ambient="+ambient+ " normal="+normal+
     // " lightSource="+ lightSource+ " cos="+cosAngle+ "reflect=" + reflect);
+    
+    Color reflectivity = averageReflectivity();
+    
     int red = Math.max(0, Math.min(255, (int) (reflectivity.getRed() * reflect)));
     int green = Math.max(0, Math.min(255, (int) (reflectivity.getGreen() * reflect)));
     int blue = Math.max(0, Math.min(255, (int) (reflectivity.getBlue() * reflect)));
@@ -112,6 +117,29 @@ public class Polygon {
     return red<<16 | green<<8 | blue;
   }
   
+  public Color reflectivity() {
+    return reflectivity;
+  }
+  
+  /** it is the average RGB value of the vertex colours (which in turn are averages) */
+  private Color averageReflectivity() {
+    // use cached version if possible
+    if (averageReflectivity!=null) return averageReflectivity;
+    
+    int r=0, g=0, b=0;
+    for (Vertex v : vertices) {
+      Color c = v.reflectivity();
+      r += c.getRed();
+      g += c.getGreen();
+      b += c.getBlue();
+    }
+    r /= vertices.length;
+    g /= vertices.length;
+    b /= vertices.length;
+    averageReflectivity = new Color(r, g, b);
+    return averageReflectivity;
+  }
+    
   public int getShade_int() {
     return shade_int;
   }

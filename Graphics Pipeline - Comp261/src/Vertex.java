@@ -22,16 +22,33 @@ public class Vertex extends PVector {
     if (normal != null) throw new Error("can't add polygons after normal has been given out >:[");
     polys.add(p);
   }
+  
   public PVector normal() {
     if (normal != null) return normal; // use the cached one if possible
     
     normal = new PVector(0,0,0);
-    for (Polygon pp : polys)
-      normal.add(pp.getNormal());
+    for (Polygon p : polys)
+      normal.add(p.getNormal());
     normal.normalize();
     return normal;
   }
   
+  public Color reflectivity() {
+    if (reflectivity != null) return reflectivity; // use the cached one if possible
+    
+    // calculate the average colour
+    int r=0, g=0, b=0;
+    for (Polygon p : polys) {
+      r += p.reflectivity().getRed();
+      g += p.reflectivity().getGreen();
+      b += p.reflectivity().getBlue();
+    }
+    r /= polys.size();
+    g /= polys.size();
+    b /= polys.size();
+    reflectivity = new Color(r, g, b);
+    return reflectivity;
+  }
   
   
   /**

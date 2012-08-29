@@ -142,7 +142,7 @@ public class RenderPipeline {
           if (x<0 || x>=width) continue; // don't draw of the side of the screen (these would wrap)
           normal.normalize(normalizedNormal);
           //zBuffer.add(p.getShade_int(), x, y, z); // flat shading
-          zBuffer.add(p.computeShade_phong(lights.get(0), normalizedNormal, 0.1f), x, y, z);
+          zBuffer.add(p.computeShade_phong(lights.get(0), normalizedNormal), x, y, z);
         }
         
         ++y; // next line

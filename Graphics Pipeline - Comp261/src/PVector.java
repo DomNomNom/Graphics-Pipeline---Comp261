@@ -954,6 +954,6 @@ public class PVector implements Serializable {
   
   /** Returns the cosine of the angle between this vector and the other vector. */
   public static float cosTheta(PVector v1, PVector v2) {
-    return (v1.x * v2.x + v1.y * v2.y + v1.z * v2.z) / v1.mag() / v2.mag();
+    return v1.dot(v2) / v1.mag() / v2.mag();
   }
 }

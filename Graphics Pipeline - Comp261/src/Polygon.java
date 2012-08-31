@@ -81,27 +81,12 @@ public class Polygon {
   public void hide() {
     hidden = true;
   }
-
   public boolean hidden() {
     return hidden;
   }
 
-  public void computeShade(PVector lightSource, float ambient) {
-    float cosAngle = PVector.cosTheta(normal, lightSource);
-    float reflect = ambient + ((cosAngle > 0) ? cosAngle : 0);
-    // System.out.println("shade: ambient="+ambient+ " normal="+normal+
-    // " lightSource="+ lightSource+ " cos="+cosAngle+ "reflect=" + reflect);
-    
-    int red = Math.max(0, Math.min(255, (int) (reflectivity.getRed() * reflect)));
-    int green = Math.max(0, Math.min(255, (int) (reflectivity.getGreen() * reflect)));
-    int blue = Math.max(0, Math.min(255, (int) (reflectivity.getBlue() * reflect)));
-    // System.out.println("color:" +
-    // reflectivity.getRed()+","+reflectivity.getGreen()+","+reflectivity.getBlue()+
-    // " -> shade:" + red+","+green+","+blue);
-    shade_int = red<<16 | green<<8 | blue;
-  }
-
   public int computeShade_phong(Light lightSource, PVector mySurfaceNormal) {
+    if (!Flags.smoothSurface) mySurfaceNormal = normal;
     float cosAngle = PVector.cosTheta(mySurfaceNormal, lightSource);
     float diffuse = ((cosAngle > 0) ? cosAngle : 0);
     // System.out.println("shade: ambient="+ambient+ " normal="+normal+
@@ -110,27 +95,41 @@ public class Polygon {
     // Phong Specular Highlight
     // see: http://en.wikipedia.org/wiki/Specular_highlight
     // and for the following: http://www.gamedev.net/topic/411626-mirror-a-vector-around-a-plane/
-    // mirror = V-2*n*(V dot n)
+    // mirror = V-2*n*(V . n)
     PVector mirroredLight = PVector.sub(lightSource, PVector.mult(mySurfaceNormal, 2*mySurfaceNormal.dot(lightSource)));
     mirroredLight.normalize();
     if (mirroredLight.z < 0) mirroredLight.z = 0;
     float specular = (float) Math.pow(mirroredLight.z, shinynessExponent );
     
     
-    float ambient = 1;
+    float ambient =  1;
     
     // multiply by the weighting defined by the light
     ambient  *= lightSource.ambient;
     diffuse  *= lightSource.diffuse;
     specular *= lightSource.specular;
     
-    Color reflectivity = averageReflectivity();
+    // unless one of the flags overrides it
+    // optimisation: we could just tell it to not-do those in the first place
+    if (Flags.noAmbient ) ambient  = 0;
+    if (Flags.noDiffuse ) diffuse  = 0;
+    if (Flags.noSpecular) specular = 0;
+    
+    // now calculate the final colour
+    // note: specular light is defined as white
+    // Optimisation: we could use less ints by using bitshifts earlier 
+    Color reflectivity;
+    if (Flags.colourAveraging) reflectivity = averageReflectivity();
+    else                       reflectivity = reflectivity();
     int red   = Math.max(0, Math.min(255, (int) (reflectivity.getRed()   * (diffuse+ambient) + 255*specular)));
     int green = Math.max(0, Math.min(255, (int) (reflectivity.getGreen() * (diffuse+ambient) + 255*specular)));
     int blue  = Math.max(0, Math.min(255, (int) (reflectivity.getBlue()  * (diffuse+ambient) + 255*specular)));
+    
     // System.out.println("color:" +
     // reflectivity.getRed()+","+reflectivity.getGreen()+","+reflectivity.getBlue()+
     // " -> shade:" + red+","+green+","+blue);
+    
+    // and turn it into into form
     return red<<16 | green<<8 | blue;
   }
   

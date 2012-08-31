@@ -76,24 +76,23 @@ public class RenderPipeline {
       Rectangle polyBounds = p.bounds();
       if (! screenBounds.intersects(polyBounds)) continue; // don't even bother with things that aren't in our view
       int y = polyBounds.y;
-      p.computeShade(lights.get(0), 0.5f);
       EdgeList[] lists = p.computeEdgeLists();
       
-      zBuffer.lockLine(y);
       for (EdgeList list : lists) {
         if (list == null) continue;
+        zBuffer.lockLine(y);
         // if (! screenBounds.contains(0, y)) continue; // don't bother with lines that aren't in the screen 
         
-        int minX = (int) Math.floor(list.l_x);
+        int minX = (int) Math.ceil(list.l_x);
         int maxX = (int) Math.floor(list.r_x); // we are flooring but iterating to include that pixel
         if (minX == maxX) ++maxX; // we should at least have a 1 pixel (so we don't get division by 0 below)
 
         zBuffer.add(p.getShade_int(), minX, y, list.l_z);
         zBuffer.add(p.getShade_int(), maxX, y, list.r_z);
         
+        zBuffer.releaseLine(y);
         ++y; // next line
       }
-      zBuffer.releaseLine(y);
     }
   }
   
@@ -116,13 +115,12 @@ public class RenderPipeline {
       Rectangle polyBounds = p.bounds();
       if (! screenBounds.intersects(polyBounds)) continue; // don't even bother with things that aren't in our view
       int y = polyBounds.y;
-      p.computeShade(lights.get(0), 0.1f);
       EdgeList[] lists = p.computeEdgeLists();
       
-      zBuffer.lockLine(y);
       for (EdgeList list : lists) {
         if (list == null) continue;
         //if (! screenBounds.contains(0, y)) continue; // don't bother with lines that aren't in the screen 
+        zBuffer.lockLine(y);
         
         int minX = (int) Math.ceil(list.l_x);
         int maxX = (int) Math.floor(list.r_x); // we are flooring but iterating to include that pixel
@@ -145,9 +143,9 @@ public class RenderPipeline {
           zBuffer.add(p.computeShade_phong(lights.get(0), normalizedNormal), x, y, z);
         }
         
+        zBuffer.releaseLine(y);
         ++y; // next line
       }
-      zBuffer.releaseLine(y);
     }
   }
   

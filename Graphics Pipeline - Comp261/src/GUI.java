@@ -21,6 +21,7 @@ import javax.swing.WindowConstants;
 
 public class GUI implements MouseMotionListener, MouseListener, MouseWheelListener {
   public static final float rotationSpeed = 0.004f;
+  
   final BufferedImage image;
   int mouseX, mouseY;
   boolean redraw;
@@ -58,6 +59,26 @@ public class GUI implements MouseMotionListener, MouseListener, MouseWheelListen
       JComponent.WHEN_IN_FOCUSED_WINDOW
     );
 
+    // number keys control our flags
+    myFrame.addKeyListener(new KeyListener() {
+      public void keyTyped(KeyEvent k) {
+        boolean wasValidChar = true;
+        switch (k.getKeyChar()) {
+          // toggle the flag corresponding to the number keys
+          case '1':  Flags.colourAveraging ^= true;    break;
+          case '2':  Flags.smoothSurface   ^= true;    break;
+          case '3':  Flags.noSpecular      ^= true;    break;
+          case '4':  Flags.noDiffuse       ^= true;    break;
+          case '5':  Flags.noAmbient       ^= true;    break;
+          //case '6':  Flags.colourAveraging ^= true;    break;
+          //case '7':  Flags.colourAveraging ^= true;    break;
+          default: wasValidChar = false;
+        }
+        if (wasValidChar) startRendering();
+      }
+      public void keyReleased(KeyEvent arg0) {}
+      public void keyPressed(KeyEvent arg0)  {}
+    });
     
     myFrame.pack();
 

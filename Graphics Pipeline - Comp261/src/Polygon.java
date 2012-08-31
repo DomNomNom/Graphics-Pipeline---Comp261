@@ -20,7 +20,6 @@ public class Polygon {
   private PVector normal;
 
   // state: computed during rendering.
-  private boolean hidden = false;
   private Rectangle bounds = null;
   private double shinynessExponent = 20;
 
@@ -75,13 +74,6 @@ public class Polygon {
 
   public PVector getNormal() {
     return normal;
-  }
-
-  public void hide() {
-    hidden = true;
-  }
-  public boolean hidden() {
-    return hidden;
   }
 
   public int computeShade_phong(Light lightSource, PVector mySurfaceNormal) {
@@ -154,10 +146,6 @@ public class Polygon {
     
   public int getShade_int() {
     return reflectivity.getRed()<<16 | reflectivity.getGreen()<<8 | reflectivity.getBlue();
-  }
-
-  public void reset() {
-    hidden = false;
   }
 
   /**
@@ -266,7 +254,6 @@ public class Polygon {
   public String toString() {
     StringBuilder ans = new StringBuilder("Poly:");
     Formatter f = new Formatter(ans);
-    ans.append(hidden ? 'h' : ' ');
     for (int i = 0; i < 3; i++) {
       f.format("(%8.3f,%8.3f,%8.3f)", vertices[i].x, vertices[i].y, vertices[i].z);
     }

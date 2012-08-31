@@ -1,9 +1,12 @@
 import java.util.Random;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 
 public class ZBuffer {
   private float[] depths;
   public int[] colours;
+  private Lock[] lineLocks; // one lock per line
 
   int wd;  // width
   int ht; // height
@@ -13,13 +16,20 @@ public class ZBuffer {
     ht = height;
     depths = new float[wd * ht];
     colours = new int[wd * ht];
+    lineLocks = new Lock[ht];
+    for (int y=0; y<ht; ++y)
+      lineLocks[y] = new ReentrantLock();
     clear();
   }
 
   void lockLine(int y) {
-    // TODO: make it threadsafe (one line at the time)
+    if (y<0 || y>=ht) return;
+    lineLocks[y].lock();
   }
-  void releaseLine(int y) {/*TODO*/}
+  void releaseLine(int y) {
+    if (y<0 || y>=ht) return;
+    lineLocks[y].unlock();
+  }
   
   void add(int colour, int x, int y, float z) {
     if (x<0 || y<0 || x>=wd || y>=ht) return; // don't accept invalid coordinates

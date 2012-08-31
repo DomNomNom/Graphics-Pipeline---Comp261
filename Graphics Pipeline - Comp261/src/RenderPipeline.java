@@ -114,6 +114,7 @@ public class RenderPipeline {
     for (Polygon p : polys)
       p.apply(transform);
 
+    // this is where the multi-threading starts:
     ArrayBlockingQueue<Polygon> polyQueue= new ArrayBlockingQueue<Polygon>(polys.size(), false, polys);
     ArrayList<RenderThread> threads = new ArrayList<RenderThread>(threadCount);
     for (int i=0; i<threadCount; ++i)
@@ -126,8 +127,7 @@ public class RenderPipeline {
     }
     catch (InterruptedException e) { }
     long endTime = System.nanoTime();
-    System.out.println(endTime - startTime);
-
+    //System.out.println(endTime - startTime); // Benchmarking
   }
   
   

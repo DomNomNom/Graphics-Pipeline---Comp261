@@ -4,12 +4,15 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.Scanner;
+import java.util.concurrent.ArrayBlockingQueue;
 
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 
 
 public class RenderPipeline {
+  public static final int threadCount = 2;
+  
   ArrayList<Polygon> polys = new ArrayList<Polygon>();
   ArrayList<Light> lights = new ArrayList<Light>();
   
@@ -67,6 +70,9 @@ public class RenderPipeline {
   }
   
   public void render_wireFrame() {
+    // no multithreading for a wireframe
+    // note: this is old code
+    
     Transform transform = calculateTransform();
     zBuffer.clear();
     for (Polygon p : polys) {
@@ -108,44 +114,23 @@ public class RenderPipeline {
     for (Polygon p : polys)
       p.apply(transform);
 
-    for (Polygon p : polys) {
-      if (p.getNormal().z > 0) continue; // don't draw polys that are facing away
-      Rectangle polyBounds = p.bounds();
-      if (! screenBounds.intersects(polyBounds)) continue; // don't even bother with things that aren't in our view
-      int y = polyBounds.y;
-      EdgeList[] lists = p.computeEdgeLists();
-      
-      for (EdgeList list : lists) {
-        if (list == null) continue;
-        //if (! screenBounds.contains(0, y)) continue; // don't bother with lines that aren't in the screen 
-        zBuffer.lockLine(y);
-        
-        int minX = (int) Math.ceil(list.l_x);
-        int maxX = (int) Math.floor(list.r_x); // we are flooring but iterating to include that pixel
-        if (minX == maxX) ++maxX; // we should at least have a 1 pixel (so we don't get division by 0 below)
-        //if (maxX < 0  ||  minX > width)  continue; //don't draw anything that can't be seen
-        // note: the previous check was removed as it somehow was omitting things that should be viewed on screen edges
-        int steps = (int) (maxX - minX);
-        float z = list.l_z;
-        float deltaZ = (list.r_z - list.l_z) / (steps);
+    ArrayBlockingQueue<Polygon> polyQueue= new ArrayBlockingQueue<Polygon>(polys.size(), false, polys);
+    ArrayList<RenderThread> threads = new ArrayList<RenderThread>(threadCount);
+    for (int i=0; i<threadCount; ++i)
+      threads.add(new RenderThread(zBuffer, lights.get(0), screenBounds, polyQueue));
 
-        PVector normal = list.l_normal;
-        PVector normalizedNormal = new PVector();
-        PVector deltaNormal = PVector.sub(list.r_normal, list.l_normal);
-        deltaNormal.div(steps);
-        
-        for (int x=minX;  x<=maxX;  ++x, z+=deltaZ, normal.add(deltaNormal)) {
-          if (x<0 || x>=width) continue; // don't draw of the side of the screen (these would wrap)
-          normal.normalize(normalizedNormal);
-          //zBuffer.add(p.getShade_int(), x, y, z); // flat shading
-          zBuffer.add(p.computeShade_phong(lights.get(0), normalizedNormal), x, y, z);
-        }
-        
-        zBuffer.releaseLine(y);
-        ++y; // next line
-      }
+    long startTime = System.nanoTime();
+    for (RenderThread t : threads) t.start();
+    try {
+      for (RenderThread t : threads) t.join();
     }
+    catch (InterruptedException e) { }
+    long endTime = System.nanoTime();
+    System.out.println(endTime - startTime);
+
   }
+  
+  
   
   private Transform calculateTransform() {
     PVector average = new PVector();

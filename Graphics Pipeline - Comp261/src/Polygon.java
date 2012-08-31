@@ -21,7 +21,6 @@ public class Polygon {
 
   // state: computed during rendering.
   private boolean hidden = false;
-  private int shade_int;
   private Rectangle bounds = null;
   private double shinynessExponent = 20;
 
@@ -86,11 +85,12 @@ public class Polygon {
   }
 
   public int computeShade_phong(Light lightSource, PVector mySurfaceNormal) {
-    if (!Flags.smoothSurface) mySurfaceNormal = normal;
+    // fall back to flat shading if we need to
+    if (mySurfaceNormal==null || !Flags.smoothSurface) mySurfaceNormal = normal;
+    
+    // diffuse
     float cosAngle = PVector.cosTheta(mySurfaceNormal, lightSource);
     float diffuse = ((cosAngle > 0) ? cosAngle : 0);
-    // System.out.println("shade: ambient="+ambient+ " normal="+normal+
-    // " lightSource="+ lightSource+ " cos="+cosAngle+ "reflect=" + reflect);
     
     // Phong Specular Highlight
     // see: http://en.wikipedia.org/wiki/Specular_highlight
@@ -121,15 +121,11 @@ public class Polygon {
     Color reflectivity;
     if (Flags.colourAveraging) reflectivity = averageReflectivity();
     else                       reflectivity = reflectivity();
-    int red   = Math.max(0, Math.min(255, (int) (reflectivity.getRed()   * (diffuse+ambient) + 255*specular)));
-    int green = Math.max(0, Math.min(255, (int) (reflectivity.getGreen() * (diffuse+ambient) + 255*specular)));
-    int blue  = Math.max(0, Math.min(255, (int) (reflectivity.getBlue()  * (diffuse+ambient) + 255*specular)));
+    int red   = Math.max(0, Math.min(255, (int) (reflectivity.getRed()   * (diffuse+ambient)  + 255*specular)));
+    int green = Math.max(0, Math.min(255, (int) (reflectivity.getGreen() * (diffuse+ambient)  + 255*specular)));
+    int blue  = Math.max(0, Math.min(255, (int) (reflectivity.getBlue()  * (diffuse+ambient)  + 255*specular)));
     
-    // System.out.println("color:" +
-    // reflectivity.getRed()+","+reflectivity.getGreen()+","+reflectivity.getBlue()+
-    // " -> shade:" + red+","+green+","+blue);
-    
-    // and turn it into into form
+    // and turn it into int form
     return red<<16 | green<<8 | blue;
   }
   
@@ -157,7 +153,7 @@ public class Polygon {
   }
     
   public int getShade_int() {
-    return shade_int;
+    return reflectivity.getRed()<<16 | reflectivity.getGreen()<<8 | reflectivity.getBlue();
   }
 
   public void reset() {
@@ -173,13 +169,13 @@ public class Polygon {
     if (bounds == null) {
       int minX = (int) Math.floor(Math.min(Math.min(vertices[0].x, vertices[1].x), vertices[2].x));
       int minY = (int) Math.floor(Math.min(Math.min(vertices[0].y, vertices[1].y), vertices[2].y));
-      int maxX = (int) Math.ceil(Math.max(Math.max(vertices[0].x, vertices[1].x), vertices[2].x));
-      int maxY = (int) Math.ceil(Math.max(Math.max(vertices[0].y, vertices[1].y), vertices[2].y));
+      int maxX = (int) Math.ceil( Math.max(Math.max(vertices[0].x, vertices[1].x), vertices[2].x));
+      int maxY = (int) Math.ceil( Math.max(Math.max(vertices[0].y, vertices[1].y), vertices[2].y));
       bounds = new Rectangle(minX, minY, (maxX - minX), (maxY - minY));
     }
     return bounds;
   }
-
+ 
   /**
    * Returns the edgeLists of the polygon: Each EdgeList corresponds to one
    * scanline and has the x and z values at the start and the x and z values at
@@ -216,26 +212,20 @@ public class Polygon {
       PVector m_norm = PVector.sub(v2.normal(), v1.normal()); // our interpolated normal step
       m_norm.div(numSteps);
 
-      // System.out.println("edgelist from: ("+v1.x+","+v1.y+","+v1.z+")-("+v2.x+","+v2.y+","+v2.z+") @ scanline "+scanLine+
-      // " of "+ans.length + " starting at bounds.y =" + bounds.y + "mx="+mx);
-      for (int i=0; /*scanLine <= maxScanLine;*/ i<numSteps; ++i, scanLine++, x += mx, z += mz, norm.add(m_norm)) {
+      for (int i=0; i<numSteps; ++i, scanLine++, x += mx, z += mz, norm.add(m_norm)) {
         // System.out.println(" x=" + x + " z=" + z + "@scanLine=" + scanLine);
         if (ans[scanLine] == null)
-          ans[scanLine] = new EdgeList(x, z, norm); // TODO
+          ans[scanLine] = new EdgeList(x, z, norm);
         else
           ans[scanLine].add(x, z, norm);
       }
-      /*
-       for (int i=0; i<ans.length; i++){EdgeList e = ans[i];
-       System.out.println(" ["+ i+"]: "+((e!=null)?e.l_x:"*")+
-       " - "+((e!=null)?e.r_x:"*"));}
-       */
     }
     return ans;
   }
 
+  /** NOT IMPLEMENTED YET! DO NOT USE! */
   public EdgeList[] computeEdgeLists_bresehams() {
-// TODO
+    // TODO
     bounds();
     EdgeList[] ans = new EdgeList[bounds.height + 1];
     for (int edge = 0; edge < 3; edge++) // for all 3 edges put the points into a edgeList
@@ -248,7 +238,6 @@ public class Polygon {
    * see: http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm 
    */
   public void drawEdgeLine(EdgeList[] canvas, PVector A, PVector B){
-    
     /*
      TODO: http://en.wikipedia.org/wiki/Bresenham%27s_line_algorithm
      function line(x0, y0, x1, y1)
@@ -285,16 +274,14 @@ public class Polygon {
     f.format("c:(%3d-%3d-%3d)", reflectivity.getRed(), reflectivity.getGreen(), reflectivity.getBlue());
     bounds();
     f.format("b:(%3d %3d %3d %3d)", bounds.x, bounds.y, bounds.width, bounds.height);
-    //if (shade != null) {
-    //  f.format("s:(%3d-%3d-%3d)", shade.getRed(), shade.getGreen(), shade.getBlue());
-    //}
+    if (reflectivity != null)
+      f.format("s:(%3d-%3d-%3d)", reflectivity.getRed(), reflectivity.getGreen(), reflectivity.getBlue());
     return ans.toString();
   }
 
   public void printToFile(PrintStream ps) {
-    for (int i = 0; i < 3; i++) {
+    for (int i = 0; i < 3; i++)
       ps.print(vertices[i].x + " " + vertices[i].y + " " + vertices[i].z + " ");
-    }
     ps.println(reflectivity.getRed() + " " + reflectivity.getGreen() + " " + reflectivity.getBlue());
   }
 

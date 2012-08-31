@@ -70,7 +70,7 @@ public class GUI implements MouseMotionListener, MouseListener, MouseWheelListen
           case '3':  Flags.noSpecular      ^= true;    break;
           case '4':  Flags.noDiffuse       ^= true;    break;
           case '5':  Flags.noAmbient       ^= true;    break;
-          //case '6':  Flags.colourAveraging ^= true;    break;
+          case '6':  Flags.wireFrame       ^= true;    break;
           //case '7':  Flags.colourAveraging ^= true;    break;
           default: wasValidChar = false;
         }
@@ -89,7 +89,9 @@ public class GUI implements MouseMotionListener, MouseListener, MouseWheelListen
     // draw unless we have drawn very recently
     if (!justRendered) {
       justRendered = true;
-      p.render();
+      
+      if (Flags.wireFrame)  p.render_wireFrame();
+      else                  p.render();
     }
   }
   

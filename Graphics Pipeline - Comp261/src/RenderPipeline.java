@@ -14,8 +14,6 @@ public class RenderPipeline {
   ArrayList<Light> lights = new ArrayList<Light>();
   
   ZBuffer zBuffer;
-
-  enum renderMode { WIREFRAME, FLAT, PHONG };
   
   public final int width = 500;
   public final int height = 500;
@@ -34,7 +32,7 @@ public class RenderPipeline {
     JFileChooser fc  = new JFileChooser("data");
     fc.showOpenDialog(new JFrame());
     inFile = fc.getSelectedFile();  // TODO: uncomment
-    if (inFile == null) throw new Error("bad file");
+    if (inFile == null) System.exit(-1); //throw new Error("bad file");
     loadFile(inFile);
   }
   
